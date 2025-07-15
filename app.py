@@ -5,11 +5,13 @@ from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from dotenv import load_dotenv
 import os
 
+load_dotenv()
+
 app = Flask(__name__)
 
 #                                      database+driver://username:password@server:port/databasename
 DATABASE_URI = os.getenv("DATABASE_URI")
-app.config['SQLALCHEMY_DATABASE_URI']=DATABASE_URI
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -86,7 +88,11 @@ def seed_tables():
 @app.route("/products")
 def get_products():
     # Statement: SELECT * FROM products;
-    products_list = Product.query.all()
+    # Method 1
+    # products_list = Product.query.all()
+    # Method 2:
+    stmt = db.select(Product)
+    products_list = db.session.scalars(stmt)
 
     # Convert the object to JSON format - Serialise
     data = products_schema.dump(products_list)
@@ -94,7 +100,11 @@ def get_products():
 
 @app.route("/products/<int:product_id>")
 def get_a_product(product_id):
-  product = Product.query.get(product_id)
+
+ # Statement: SELECT * FROM products WHERE id=product_id;
+  # product = Product.query.get(product_id)
+  stmt = db.select(Product).where(Product.id == product_id)
+  product = db.session.scalar(stmt)
 
   if product:
     data = product_schema.dump(product)
@@ -129,12 +139,15 @@ def create_product():
 # DELETE /products/id
 @app.route("/products/<int:product_id>", methods = ["DELETE"])
 def delete_product(product_id):
-  # Statement: DELETE * FROM products WHERE id = product_id
-  # Find the product
-  # Statement: SELECT FROM WHere
-  # stmt = db.select(Product).filter_by(id=product_id)
-  # product = db.session.scalar(stmt)
-  product = Product.query.get(product_id)
+  # Statement: DELETE * FROM products WHERE id=product_id;
+    # Find the product with the product_id from the database
+    # Statement: SELECT * FROM products WHERE id = product_id;
+    # Method 1:
+    # stmt = db.select(Product).where(Product.id == product_id)
+  stmt = db.select(Product).filter_by(id=product_id)
+  product = db.session.scalar(stmt)
+    # Method 2:
+    # product = Product.query.get(product_id)
   if product:
 
   # if it exist - delete and send message
@@ -148,7 +161,11 @@ def delete_product(product_id):
   # UPDATE method: PUT, PATCH
 @app.route("/products/<int:product_id>", methods = ["PUT", "PATCH"])
 def update_product(product_id):
-  product = Product.query.get(product_id)
+  # Statement: UPDATE products SET column_name=value;
+  # Find the product with the id = product_id
+  # product = Product.query.get(product_id)
+  stmt = db.select(Product).filter_by(id=product_id)
+  product = db.session.scalar(stmt)
   if product:
     # Fetch updated values from the requets body
     body_data = request.get_json()
@@ -171,5 +188,7 @@ def update_product(product_id):
     # acknowledgement message
     return {"message": f"Product with id {product_id} does not exist."}, 404
 
- 
+
+if __name__ == "__main__":
+  app.run(debug=True)
 
