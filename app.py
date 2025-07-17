@@ -33,6 +33,23 @@ class Product(db.Model):
         self.price = price
         self.stock = stock
 
+class Category(db.Model):
+   __tablename__ = "categories"
+   id = db.Column(db.Integere, primary_key=True)
+   name = db.Column(db.String(100), nullable = False, unique=True)
+   description = db.Column(db.String(255))
+
+  #  def __init__(self, name, description, price, stock):
+  #       self.name = name
+  #       self.description = description
+  #       self.price = price
+  #       self.stock = stock
+
+# Create a class for ProductSchema
+class CategorySchema(SQLAlchemyAutoSchema):
+   class Meta:
+      model = Category
+      load_instance = True
 
 # Create a class for ProductSchema
 class ProductSchema(SQLAlchemyAutoSchema):
@@ -40,11 +57,17 @@ class ProductSchema(SQLAlchemyAutoSchema):
         model = Product
         load_instance = True
 
-# ProductSchema instance to handle multiple products
+# ProductSchema instance to handle multiple products, convert python object to json 
 products_schema = ProductSchema(many=True)
 
 # ProductSchema instance to handle single product
 product_schema = ProductSchema()
+
+# CategorySchema instance to handle multiple products
+categories_schema = CategorySchema(many=True)
+
+# CategorySchema instance to handle single product
+category_schema = CategorySchema()
 
 @app.cli.command("create") # flask create
 def create_table():
